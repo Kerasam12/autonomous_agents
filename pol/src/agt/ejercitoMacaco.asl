@@ -86,10 +86,10 @@ started.
 					.findall(isLateral(X, Y), isLateral(X, Y), LateralCells);
 					.findall(isCorner(X, Y), isCorner(X, Y), CornerCells);
 					.findall(isCenter(X, Y), isCenter(X, Y), CenterCells);
-						L = .length(CenterCells);
-						N = math.floor(math.random(L));
-						.nth(N,CenterCells,isCenter(A,B));
-						 play(A,B).
+					L = .length(CenterCells);
+					N = math.floor(math.random(L));
+					.nth(N,CenterCells,isCenter(A,B));
+						play(A,B).
 
 						 
 						 
