@@ -74,11 +74,19 @@ isCenter(X, Y) :- isCell(X, Y) & (X == 1 & Y == 1).
 occupiedByOponent(X,Y) :- not available(X, Y) & mark(X, Y, Z). 
 occupiedByMyself(X,Y) :- not available(X, Y) & mark(X, Y, symbol(S)).
 
+//A values of heuristic
 checkDiagonal1(X,Y) :- available(X,Y) & (available(X+1, Y+1)& available(X-1, Y-1))|(occupiedByMyself(X+1, Y+1)& not occupiedByOponent(X-1, Y-1))|(occupiedByMyself(X-1, Y-1)& not occupiedByOponent(X+1, Y+1))
 checkDiagonal2(X,Y) :- available(X,Y) & (available(X-1, Y+1)& available(X+1, Y-1))|(occupiedByMyself(X-1, Y+1)& not occupiedByOponent(X+1, Y-1))|(occupiedByMyself(X+1, Y-1)& not occupiedByOponent(X-1, Y+1))
 
 checkLateralVer(X,Y) :- available(X,Y) & (available(X+1, Y)& available(X-1, Y))|(occupiedByMyself(X+1, Y)& not occupiedByOponent(X-1, Y))|(occupiedByMyself(X-1, Y)& not occupiedByOponent(X+1, Y))
 checkLateralHor(X,Y) :- available(X,Y) & (available(X, Y+1)& available(X, Y+2))|(occupiedByMyself(X, Y+1)& not occupiedByOponent(X, Y+2))|(occupiedByMyself(X, Y+2)& not occupiedByOponent(X, Y+1))
+
+checkLateralHorInv(X,Y) :- available(X,Y) & (available(X, Y-1)& available(X, Y-2))|(occupiedByMyself(X, Y-1)& not occupiedByOponent(X, Y-2))|(occupiedByMyself(X, Y-2)& not occupiedByOponent(X, Y-1))
+
+checkVerUp(X,Y) :- available(X,Y) & (available(X-1, Y)& available(X-2, Y))|(occupiedByMyself(X-1, Y)& not occupiedByOponent(X-2, Y))|(occupiedByMyself(X-2, Y)& not occupiedByOponent(X-1, Y))
+checkVerDown(X,Y) :- available(X,Y) & (available(X+1, Y)& available(X+2, Y))|(occupiedByMyself(X+1, Y)& not occupiedByOponent(X+2, Y))|(occupiedByMyself(X+2, Y)& not occupiedByOponent(X+1, Y))
+
+checkHorMid(X,Y) :- available(X,Y) & (available(X, Y-1)& available(X, Y+1))|(occupiedByMyself(X, Y-1)& not occupiedByOponent(X, Y+1))|(occupiedByMyself(X, Y+1)& not occupiedByOponent(X, Y-1))
 
 started.
 
