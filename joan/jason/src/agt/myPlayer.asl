@@ -81,30 +81,36 @@ isCorner(X, Y) :- available(X, Y) & ((X == 0 & Y == 0) |
 isCenter(X, Y) :- available(X,Y) & (X == 1 & Y == 1).
 
 // A cell is occupied by oponent
-occupiedByOponent(X,Y) :- not available(X, Y) & mark(X, Y, Z). 
-occupiedByMyself(X,Y) :- not available(X, Y) & mark(X, Y, symbol(S)).
+symbol(x).
+symbol(o).
+occupiedByOponent(X,Y,OP) :-  not available & symbol(OP). 
+occupiedByMyself(X,Y,AC) :- not available & symbol(AC).
 
-checkWinnerMove(X,Y) :- ((occupiedByMyself(X+1,Y+1) & occupiedByMyself(X-1,Y-1)) | 
-						(occupiedByMyself(X-1,Y+1) & occupiedByMyself(X+1,Y-1)) | 
-						(occupiedByMyself(X+1,Y) & occupiedByMyself(X-1,Y)) |
-						(occupiedByMyself(X,Y+1) & occupiedByMyself(X,Y-1)) |
-						(occupiedByMyself(X+1,Y) & occupiedByMyself(X+2,Y)) |
-						(occupiedByMyself(X-1,Y) & occupiedByMyself(X-2,Y)) |
-						(occupiedByMyself(X,Y+1) & occupiedByMyself(X,Y+2)) |
-						(occupiedByMyself(X,Y-1) & occupiedByMyself(X,Y-2)) |
-						(occupiedByMyself(X+1,Y+1) & occupiedByMyself(X+2,Y+2)) |
-						(occupiedByMyself(X-1,Y-1) & occupiedByMyself(X-2,Y-2)) ).
+checkWinnerMove(X,Y,AC) :- (occupiedByMyself(X+1,Y+1,AC) & occupiedByMyself(X-1,Y-1,AC)) | 
+						(occupiedByMyself(X-1,Y+1,AC) & occupiedByMyself(X+1,Y-1,AC)) | 
+						(occupiedByMyself(X+1,Y,AC) & occupiedByMyself(X-1,Y,AC)) |
+						(occupiedByMyself(X,Y+1,AC) & occupiedByMyself(X,Y-1,AC)) |
+						(occupiedByMyself(X+1,Y,AC) & occupiedByMyself(X+2,Y,AC)) |
+						(occupiedByMyself(X-1,Y,AC) & occupiedByMyself(X-2,Y,AC)) |
+						(occupiedByMyself(X,Y+1,AC) & occupiedByMyself(X,Y+2,AC)) |
+						(occupiedByMyself(X,Y-1,AC) & occupiedByMyself(X,Y-2,AC)) |
+						(occupiedByMyself(X+1,Y+1,AC) & occupiedByMyself(X+2,Y+2,AC)) |
+						(occupiedByMyself(X-1,Y-1,AC) & occupiedByMyself(X-2,Y-2,AC)) |
+						(occupiedByMyself(X+1,Y-1,AC) & occupiedByMyself(X+2,Y-2,AC)) |
+						(occupiedByMyself(X-1,Y+1,AC) & occupiedByMyself(X-2,Y+2,AC)).
 
-checkLoserMove(X,Y) :- ((occupiedByOponent(X+1,Y+1) & occupiedByOponent(X-1,Y-1)) | 
-						(occupiedByOponent(X-1,Y+1) & occupiedOponent(X+1,Y-1)) | 
-						(occupiedByOponent(X+1,Y) & occupiedByOponent(X-1,Y)) |
-						(occupiedByOponent(X,Y+1) & occupiedByOponent(X,Y-1)) |
-						(occupiedByOponent(X+1,Y) & occupiedByOponent(X+2,Y)) |
-						(occupiedByOponent(X-1,Y) & occupiedByOponent(X-2,Y)) |
-						(occupiedByOponent(X,Y+1) & occupiedByOponent(X,Y+2)) |
-						(occupiedByOponent(X,Y-1) & occupiedByOponent(X,Y-2)) |
-						(occupiedByOponent(X+1,Y+1) & occupiedByOponent(X+2,Y+2)) |
-						(occupiedByOponent(X-1,Y-1) & occupiedByOponent(X-2,Y-2)) ).	
+checkLoserMove(X,Y,OP) :- (occupiedByOponent(X+1,Y+1,OP) & occupiedByOponent(X-1,Y-1,OP)) | 
+						(occupiedByOponent(X-1,Y+1,OP) & occupiedOponent(X+1,Y-1,OP)) | 
+						(occupiedByOponent(X+1,Y,OP) & occupiedByOponent(X-1,Y,OP)) |
+						(occupiedByOponent(X,Y+1,OP) & occupiedByOponent(X,Y-1,OP)) |
+						(occupiedByOponent(X+1,Y,OP) & occupiedByOponent(X+2,Y,OP)) |
+						(occupiedByOponent(X-1,Y,OP) & occupiedByOponent(X-2,Y,OP)) |
+						(occupiedByOponent(X,Y+1,OP) & occupiedByOponent(X,Y+2,OP)) |
+						(occupiedByOponent(X,Y-1,OP) & occupiedByOponent(X,Y-2,OP)) |
+						(occupiedByOponent(X+1,Y+1,OP) & occupiedByOponent(X+2,Y+2,OP)) |
+						(occupiedByOponent(X-1,Y-1,OP) & occupiedByOponent(X-2,Y-2,OP))|
+						(occupiedByOponent(X+1,Y-1,OP) & occupiedByOponent(X+2,Y-2,OP)) |
+						(occupiedByOponent(X-1,Y+1,OP) & occupiedByOponent(X-2,Y+2,OP)).	
 						
 
 //A values of heuristic
@@ -184,28 +190,35 @@ started.
 	- mark that cell by performing the action play(A,B).
 */
 +round(Z) : next <- 
-					Win = _;
+					/*Win = _;
 					Lose = _;
 					Cent = _;
 					Corner = _;
 					Lat = _;
 					A = _;
-					B = _;
+					B = _;*/
+					if(symbol(x)) {AC = x;OP = o} else {AC = o;OP = x}
+					.print(AC, OP);
 
-					.findall(available(X,Y), checkWinnerMove(X,Y), Win);
-					.findall(available(X,Y), checkLoserMove(X,Y), Lose);
+					.print(mark(0,0,symbol(OP)));
+					.findall([X,Y], available(X,Y), AvailableCells);
+					.findall(available(X,Y) , checkWinnerMove(X,Y,AC), Win);
+					.findall(available(X,Y), checkLoserMove(X,Y,OP), Lose);
 					.findall(available(X,Y), isCenter(X,Y), Cent);
 					.findall(available(X,Y), isCorner(X,Y), Corner);
 					.findall(available(X,Y), isLateral(X,Y), Lat);
+					.print("win");
+					.print(Win);
+					.print(Lose);
+					.print(AvailableCells);
 
-
-					if (.length(Win) > 0){
-						L = .length(Win);
-						N = math.floor(math.random(L));
-						.nth(N,Win,available(A,B));
-						play(A,B);
-					} 
 					
+					for (.member([X,Y], AvailableCells)){
+						if (checkWinnerMove(X,Y)){
+							.print("Winner",X,Y);
+							play(X,Y);
+						} 
+					}
 
 					if (.length(Lose) > 0){
 						L = .length(Lose);
