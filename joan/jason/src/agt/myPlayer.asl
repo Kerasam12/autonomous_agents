@@ -91,7 +91,9 @@ checkWinnerMove(X,Y) :- ((occupiedByMyself(X+1,Y+1) & occupiedByMyself(X-1,Y-1))
 						(occupiedByMyself(X+1,Y) & occupiedByMyself(X+2,Y)) |
 						(occupiedByMyself(X-1,Y) & occupiedByMyself(X-2,Y)) |
 						(occupiedByMyself(X,Y+1) & occupiedByMyself(X,Y+2)) |
-						(occupiedByMyself(X,Y-1) & occupiedByMyself(X,Y-2)) ).
+						(occupiedByMyself(X,Y-1) & occupiedByMyself(X,Y-2)) |
+						(occupiedByMyself(X+1,Y+1) & occupiedByMyself(X+2,Y+2)) |
+						(occupiedByMyself(X-1,Y-1) & occupiedByMyself(X-2,Y-2)) ).
 
 checkLoserMove(X,Y) :- ((occupiedByOponent(X+1,Y+1) & occupiedByOponent(X-1,Y-1)) | 
 						(occupiedByOponent(X-1,Y+1) & occupiedOponent(X+1,Y-1)) | 
@@ -100,7 +102,9 @@ checkLoserMove(X,Y) :- ((occupiedByOponent(X+1,Y+1) & occupiedByOponent(X-1,Y-1)
 						(occupiedByOponent(X+1,Y) & occupiedByOponent(X+2,Y)) |
 						(occupiedByOponent(X-1,Y) & occupiedByOponent(X-2,Y)) |
 						(occupiedByOponent(X,Y+1) & occupiedByOponent(X,Y+2)) |
-						(occupiedByOponent(X,Y-1) & occupiedByOponent(X,Y-2)) ).	
+						(occupiedByOponent(X,Y-1) & occupiedByOponent(X,Y-2)) |
+						(occupiedByOponent(X+1,Y+1) & occupiedByOponent(X+2,Y+2)) |
+						(occupiedByOponent(X-1,Y-1) & occupiedByOponent(X-2,Y-2)) ).	
 						
 
 //A values of heuristic
