@@ -1,3 +1,4 @@
+
 /*
 
 Implementation of a Tic-Tac-Toe player that just plays random moves.
@@ -34,9 +35,10 @@ Furthermore, the agent may also observe the following:
 
 To mark a cell, use the 'play' action. For example if you perform the action play(1,1). 
 Then the cell with coordinates (1,1) will be marked with your symbol. 
-This action will fail if that cell is already marked. 
+This action will fail if that cell is already marked.
 
 */
+
 
 
 /* Initial beliefs and rules */
@@ -46,52 +48,72 @@ This action will fail if that cell is already marked.
 isCoordinate(0).
 isCoordinate(1).
 isCoordinate(2).
+
+
+
 isCell(X,Y) :- isCoordinate(X) & isCoordinate(Y).
 
-// Check that a cell is a lateral cell
-isLateral(X, Y) :- isCell(X, Y) & (X == 0 & Y == 1 | 
-								   X == 1 & Y == 0 |
-								   X == 1 & Y == 2 |
-								   X == 2 & Y == 1 ).
 
-// Check that a cell is a corner cell
-isCorner(X, Y) :- isCell(X, Y) & (X == 0 & Y == 0 | 
-								  X == 0 & Y == 2 |
-								  X == 2 & Y == 0 |
-								  X == 2 & Y == 2 ).
-// Check that a cell is the center cell
-
-isCenter(X, Y) :- isCell(X, Y) & (X == 1 & Y == 1).
 
 /* A cell is 'available' if it does not contain a mark.*/
 available(X,Y) :- isCell(X,Y) & not mark(X,Y,_).
 
+// Check that a cell is a lateral cell
+isLateral(X, Y) :- available(X, Y) & ((X == 0 & Y == 1) | 
+								   (X == 1 & Y == 0) |
+								   (X == 1 & Y == 2) |
+								   (X == 2 & Y == 1) ).
 
-// A cell is occupied by oponent
-occupiedByOponent(X,Y) :- not available(X, Y) & mark(X, Y, Z). 
-occupiedByMyself(X,Y) :- not available(X, Y) & mark(X, Y, symbol(S)).
+// Check that a cell is a corner cell
+isCorner(X, Y) :- available(X, Y) & ((X == 0 & Y == 0) | 
+								  (X == 0 & Y == 2) |
+								  (X == 2 & Y == 0) |
+								  (X == 2 & Y == 2) ).
+// Check that a cell is the center cell
 
-middlecheckdiagonalT1(X,Y) :- available(X,Y) & (occupiedByOponent(X+1,Y+1) | occupiedByOponent(X-1,Y-1))
-middlecheckdiagonalT2(X,Y) :- available(X,Y) & (occupiedByOponent(X-1,Y+1) | occupiedByOponent(X+1,Y-1))
-middlecheckverticalT(X,Y) :- available(X,Y) & (occupiedByOponent(X+1,Y) | occupiedByOponent(X-1,Y))
-middlecheckhorizontalT(X,Y) :- available(X,Y) & (occupiedByOponent(X,Y+1) | occupiedByOponent(X,Y-1))
+isCenter(X, Y) :- available(X,Y) & (X == 1 & Y == 1).
 
-left2rightT(X,Y) :- available(X,Y) & (occupiedByOponent(X, Y-1) | occupiedByOponent(X,Y-2))
-right2leftT(X,Y) :- available(X,Y) & (occupiedByOponent(X, Y+1) | occupiedByOponent(X,Y+2))
+// A cell is occupied by oponent for X
+occupiedByOponent(X,Y,OP) :-  not available & mark(X,Y,OP). 
+occupiedByMyself(X,Y,AC) :- not available & mark(X,Y,AC).
 
-top2downT(X,Y) :- available(X,Y) & (occupiedByOponent(X+1, Y) | occupiedByOponent(X+2,Y))
-down2upT(X,Y) :- available(X,Y) & (occupiedByOponent(X-1, Y) | occupiedByOponent(X-2,Y))
+// A cell is occupied by oponent for X
+						
 
-diagonalupleftT(X,Y) :- available(X,Y) & (occupiedByOponent(X-1,Y-1) | occupiedByOponent(X-2,Y-2))
-diagonaluprightT(X,Y) :- available(X,Y) & (occupiedByOponent(X-1,Y+1) | occupiedByOponent(X-2,Y+2))
-diagonaldownleftT(X,Y) :- available(X,Y) & (occupiedByOponent(X+1,Y+1) | occupiedByOponent(X+2,Y+2))
-diagonaldownrightT(X,Y) :- available(X,Y) & (occupiedByOponent(X+1,Y-1) | occupiedByOponent(X+2,Y-2))
+checkWinnerMove(X,Y,AC) :- (occupiedByMyself(X+1,Y+1,AC) & occupiedByMyself(X-1,Y-1,AC)) | 
+						(occupiedByMyself(X-1,Y+1,AC) & occupiedByMyself(X+1,Y-1,AC)) | 
+						(occupiedByMyself(X+1,Y,AC) & occupiedByMyself(X-1,Y,AC)) |
+						(occupiedByMyself(X,Y+1,AC) & occupiedByMyself(X,Y-1,AC)) |
+						(occupiedByMyself(X+1,Y,AC) & occupiedByMyself(X+2,Y,AC)) |
+						(occupiedByMyself(X-1,Y,AC) & occupiedByMyself(X-2,Y,AC)) |
+						(occupiedByMyself(X,Y+1,AC) & occupiedByMyself(X,Y+2,AC)) |
+						(occupiedByMyself(X,Y-1,AC) & occupiedByMyself(X,Y-2,AC)) |
+						(occupiedByMyself(X+1,Y+1,AC) & occupiedByMyself(X+2,Y+2,AC)) |
+						(occupiedByMyself(X-1,Y-1,AC) & occupiedByMyself(X-2,Y-2,AC)) |
+						(occupiedByMyself(X+1,Y-1,AC) & occupiedByMyself(X+2,Y-2,AC)) |
+						(occupiedByMyself(X-1,Y+1,AC) & occupiedByMyself(X-2,Y+2,AC)).
+
+checkLoserMove(X,Y,OP) :- (occupiedByOponent(X+1,Y+1,OP) & occupiedByOponent(X-1,Y-1,OP)) | 
+						(occupiedByOponent(X-1,Y+1,OP) & occupiedOponent(X+1,Y-1,OP)) | 
+						(occupiedByOponent(X+1,Y,OP) & occupiedByOponent(X-1,Y,OP)) |
+						(occupiedByOponent(X,Y+1,OP) & occupiedByOponent(X,Y-1,OP)) |
+						(occupiedByOponent(X+1,Y,OP) & occupiedByOponent(X+2,Y,OP)) |
+						(occupiedByOponent(X-1,Y,OP) & occupiedByOponent(X-2,Y,OP)) |
+						(occupiedByOponent(X,Y+1,OP) & occupiedByOponent(X,Y+2,OP)) |
+						(occupiedByOponent(X,Y-1,OP) & occupiedByOponent(X,Y-2,OP)) |
+						(occupiedByOponent(X+1,Y+1,OP) & occupiedByOponent(X+2,Y+2,OP)) |
+						(occupiedByOponent(X-1,Y-1,OP) & occupiedByOponent(X-2,Y-2,OP))|
+						(occupiedByOponent(X+1,Y-1,OP) & occupiedByOponent(X+2,Y-2,OP)) |
+						(occupiedByOponent(X-1,Y+1,OP) & occupiedByOponent(X-2,Y+2,OP)).		
+						
 
 
 started.
 
 
 /* Plans */
+
+
 
 /* When the agent is started, perform the 'sayHello' action. */
 +started <- sayHello.
@@ -103,14 +125,81 @@ started.
 	- pick the N-th cell of the list, and store its coordinates in the variables A and B.
 	- mark that cell by performing the action play(A,B).
 */
-+round(Z) : next <- .findall(available(X,Y), available(X,Y), AvailableCells);
-					.findall(isLateral(X, Y), isLateral(X, Y), LateralCells);
-					.findall(isCorner(X, Y), isCorner(X, Y), CornerCells);
-					.findall(isCenter(X, Y), isCenter(X, Y), CenterCells);
-					L = .length(CenterCells);
-					N = math.floor(math.random(L));
-					.nth(N,CenterCells,isCenter(A,B));
-						play(A,B).
++round(Z) : next <- 
+					Win = _;
+					Lose = _;
+					Cent = _;
+					Corner = _;
+					Lat = _;
+
+					if(symbol(x)) {AC = x;OP = o} else {AC = o;OP = x}
+					
+					.findall([X,Y],available(X,Y),AvailableCells);
+					.findall([X,Y], checkWinnerMove(X,Y), Win);
+					.findall(available(X,Y), checkLoserMove(X,Y), Lose);
+					.findall(available(X,Y), isCenter(X,Y), Cent);
+					.findall(available(X,Y), isCorner(X,Y), Corner);
+					.findall(available(X,Y), isLateral(X,Y), Lat);
+					.findall(available(X,Y),available(X,Y),NotAvailableCells);
+			
+					if (symbol(x)){
+						.print("I am x");
+					} else {.print("I am o")}; 
+				
+					
+					
+					.print(Cent);
+					.print(Corner);
+					.print(Lat);
+					.print(AvailableCells,"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+					
+					for ( .member([X,Y],AvailableCells) ) {
+						.print(X,Y);
+						if (checkWinnerMove(X,Y,AC)){
+							.print("Winner move");
+							 play(X,Y);
+						} else {.print("not winner move")};
+						}    
+					for ( .member([X,Y],AvailableCells) ) {
+						.print(X,Y);
+						if (checkLoserMove(X,Y,OP)){
+							.print("Loser move");
+							 play(X,Y);
+						} else {.print("not loser move")};
+						}
+					if (.length(Lose) > 0){
+						L = .length(Lose);
+						N = math.floor(math.random(L));
+						.nth(N,Lose,available(A,B));
+						.print(Lose);
+
+						play(A,B);
+						} 
+
+					if (.length(Cent) > 0){
+						L = .length(Cent);
+						N = math.floor(math.random(L));
+						.nth(N,Cent,available(A,B));
+						play(A,B);
+
+					} 
+					if (.length(Corner) > 0){
+						L = .length(Corner);
+						N = math.floor(math.random(L));
+						.nth(N,Corner,available(A,B));
+						play(A,B);
+					}
+					if (.length(Lat) > 0){
+						L = .length(Lat);
+						N = math.floor(math.random(L));
+						.nth(N,Lat,available(A,B));
+						play(A,B);
+					}.
+
+					
+
+
+						
 
 						 
 						 
