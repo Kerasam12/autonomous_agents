@@ -201,8 +201,8 @@ class BN_DetectCollision(pt.behaviour.Behaviour):
 
         self.sensor_obj_info = self.my_agent.rc_sensor.sensor_rays[Sensors.RayCastSensor.OBJECT_INFO]
         
-        left_threshold = list(range(8))
-        right_threshold = list(range(14, 22))
+        left_threshold = list(range(9))
+        right_threshold = list(range(15, 22))
         only_flowers_range = left_threshold + right_threshold
 
         degrees_negative = list(range(-10, -91, -180 // 21))
@@ -211,6 +211,7 @@ class BN_DetectCollision(pt.behaviour.Behaviour):
         degrees = degrees_negative + [-90] + degrees_positive
 
         detection_indexes = [i for i, obj in enumerate(self.sensor_obj_info) if obj is not None]
+        detection_indexes = [i for i in detection_indexes if self.sensor_obj_info[i]['tag'] != "Astronaut"]
 
         if detection_indexes:
             obstacle_index = int(statistics.median(detection_indexes))
@@ -243,8 +244,6 @@ class BN_AvoidCollision(pt.behaviour.Behaviour):
         self.my_goal = asyncio.create_task(Goals_BT.AvoidCollision(self.my_agent).run())
 
     def update(self):
-        
-
         if not self.my_goal.done():
             return pt.common.Status.RUNNING
         else:
@@ -259,6 +258,107 @@ class BN_AvoidCollision(pt.behaviour.Behaviour):
     def terminate(self, new_status: common.Status):
         # Finishing the behaviour, therefore we have to stop the associated task
         self.logger.debug("Terminate BN_AvoidCollision")
+        self.my_goal.cancel()
+
+
+class BN_DetectAstronaut(pt.behaviour.Behaviour):
+    def __init__(self, aagent):
+        self.my_goal = None
+        print("Initializing BN_DetectAstronaut")
+        super(BN_DetectAstronaut, self).__init__("BN_DetectAstronaut")
+        self.my_agent = aagent
+        self.previous_astronaut_state = None
+
+    def initialise(self):
+        pass
+
+    def update(self):
+        current_astronaut_state = self.my_agent.i_state.get_astronaut_location()
+
+        self.sensor_obj_info = self.my_agent.rc_sensor.sensor_rays[Sensors.RayCastSensor.OBJECT_INFO]
+        
+        left_threshold = list(range(9))
+        right_threshold = list(range(15, 22))
+        only_flowers_range = left_threshold + right_threshold
+
+        degrees = list(range(-90, 90, 180 // 21))
+
+        detection_indexes = [i for i, obj in enumerate(self.sensor_obj_info) if obj is not None]
+        detection_indexes = [i for i in detection_indexes if self.sensor_obj_info[i]['tag'] == "Astronaut"]
+
+        if detection_indexes:
+            astronaut_index = int(statistics.median(detection_indexes))
+            if current_astronaut_state != self.previous_astronaut_state:
+                print("BN_DetectAstronaut completed with SUCCESS")
+                self.previous_astronaut_state = current_astronaut_state
+            self.my_agent.i_state.locate_astronaut(degrees[astronaut_index])
+            # print("BN_DetectCollision completed with SUCCESS")
+            return pt.common.Status.SUCCESS
+            
+        if current_astronaut_state != self.previous_astronaut_state:
+            print("BN_DetectAstronaut completed with FAILURE")
+            self.previous_astronaut_state = current_astronaut_state
+        # print("BN_DetectCollision completed with FAILURE")
+        self.my_agent.i_state.locate_astronaut(None)
+        return pt.common.Status.FAILURE                
+
+    def terminate(self, new_status: common.Status):
+        pass
+
+
+class BN_TurnAlongAstronaut(pt.behaviour.Behaviour):
+    def __init__(self, aagent):
+        self.my_goal = None
+        print("Initializing BN_TurnAlongAstronaut")
+        super(BN_TurnAlongAstronaut, self).__init__("BN_TurnAlongAstronaut")
+        self.my_agent = aagent
+
+    def initialise(self):
+        self.my_goal = asyncio.create_task(Goals_BT.TurnAlongAstronaut(self.my_agent).run())
+
+    def update(self):
+        if not self.my_goal.done():
+            return pt.common.Status.RUNNING
+        else:
+            res = self.my_goal.result()
+            if res:
+                print("BN_TurnAlongAstronaut completed with SUCCESS")
+                return pt.common.Status.SUCCESS
+            else:
+                print("BN_TurnAlongAstronaut completed with FAILURE")
+                return pt.common.Status.FAILURE
+
+    def terminate(self, new_status: common.Status):
+        # Finishing the behaviour, therefore we have to stop the associated task
+        self.logger.debug("Terminate BN_TurnAlongAstronaut")
+        self.my_goal.cancel()
+
+
+class BN_WalkTowardsAstronaut(pt.behaviour.Behaviour):
+    def __init__(self, aagent):
+        self.my_goal = None
+        print("Initializing BN_WalkTowardsAstronaut")
+        super(BN_WalkTowardsAstronaut, self).__init__("BN_WalkTowardsAstronaut")
+        self.my_agent = aagent
+
+    def initialise(self):
+        self.my_goal = asyncio.create_task(Goals_BT.BN_WalkTowardsAstronaut(self.my_agent).run())
+
+    def update(self):
+        if not self.my_goal.done():
+            return pt.common.Status.RUNNING
+        else:
+            res = self.my_goal.result()
+            if res:
+                print("BN_WalkTowardsAstronaut completed with SUCCESS")
+                return pt.common.Status.SUCCESS
+            else:
+                print("BN_WalkTowardsAstronaut completed with FAILURE")
+                return pt.common.Status.FAILURE
+
+    def terminate(self, new_status: common.Status):
+        # Finishing the behaviour, therefore we have to stop the associated task
+        self.logger.debug("Terminate BN_WalkTowardsAstronaut")
         self.my_goal.cancel()
 
 
@@ -280,8 +380,14 @@ class BTRoam:
         intelligent_roaming = pt.composites.Selector(name="IntelligentRoaming", memory=False)
         intelligent_roaming.add_children([avoid_obstacle, roaming])
 
+        track_astronaut = pt.composites.Parallel(name="TrackAstronaut", policy=py_trees.common.ParallelPolicy.SuccessOnAll())
+        track_astronaut.add_children([BN_WalkTowardsAstronaut(aagent), BN_TurnAlongAstronaut(aagent)])
+
+        stalk_astronaut = pt.composites.Sequence(name="FollowAstronaut", memory=True)
+        stalk_astronaut.add_children([BN_DetectAstronaut(aagent), track_astronaut])
+
         self.root = pt.composites.Selector(name="Selector", memory=False)
-        self.root.add_children([detection, intelligent_roaming])
+        self.root.add_children([detection, stalk_astronaut, intelligent_roaming])
 
         self.behaviour_tree = pt.trees.BehaviourTree(self.root)
 

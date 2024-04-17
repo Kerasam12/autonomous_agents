@@ -157,6 +157,22 @@ class Turn:
             await self.a_agent.send_message("action", "nt")
 
 
+class EatFlower:
+    def __init__(self, a_agent):
+        self.a_agent = a_agent
+        self.rc_sensor = a_agent.rc_sensor
+        self.i_state = a_agent.i_state
+
+    async def run(self):
+        print("The critter is eating the flower!")
+        await self.a_agent.send_message("action", "stop")
+        await asyncio.sleep(5)
+        self.a_agent.i_state.update_hunger(False)
+        print(self.i_state)
+        self.a_agent.i_state.update_lunch_time(time.time())
+        return True
+    
+
 class AvoidCollision:
     """
     Detects the surrounding with the sensors and,
@@ -220,31 +236,106 @@ class AvoidCollision:
             print("***** TASK Avoid CANCELLED")
             await self.a_agent.send_message("action", "nt")
 
+        return False  # Return True to indicate that collision avoidance is complete
 
 
-        # print(direction)
-        #for index, value in enumerate(sensor_obj_info):
-        #    if value is not None:
+class TurnAlongAstronaut:
+    """
+    Detects the surrounding with the sensors and,
+    if it detects any obstacle, it avoids it.
+    """
 
-#            await self.a_agent.send_message("action", "stop")  # Stop the agent
-#            await asyncio.sleep(0.5)  # Wait for a short time for the agent to stop
-#            # Change the agent's direction to avoid collision (for example, turn left or right)
-#            await self.a_agent.send_message("action", "tr")  # Turn right, you can modify it as needed
-#            await asyncio.sleep(1)  # Wait for a short time for the agent to turn
-        return True  # Return True to indicate that collision avoidance is complete
-        return False  # Return False if no collision is detected
-    
+    TRACKING = 0
+    TURNING = 1
+    MOVING = 2
 
-class EatFlower:
     def __init__(self, a_agent):
         self.a_agent = a_agent
         self.rc_sensor = a_agent.rc_sensor
         self.i_state = a_agent.i_state
+        self.rotation_amount = 45
+        self.prev_rotation = 0
+        self.accumulated_rotation = 0
+        self.state = self.TRACKING
+        self.direction = self.i_state.get_astronaut_location()
 
     async def run(self):
-        print("The critter is eating the flower!")
-        await asyncio.sleep(5)
-        self.a_agent.i_state.update_hunger(False)
-        print(self.i_state)
-        self.a_agent.i_state.update_lunch_time(time.time())
-        return True
+        print('aaa')
+        print(self.direction)
+        degrees = -self.direction if self.direction < 0 else self.direction
+        # degrees = degrees * random.choice(np.arange(0.5, 3, 0.5).tolist())
+        try:
+            while True:
+                if self.state == self.TRACKING:
+                    if self.direction > 0:
+                        await self.a_agent.send_message("action", "tr")
+                        # print("Direction: RIGHT")
+                    else:
+                        await self.a_agent.send_message("action", "tl")
+
+                    self.prev_rotation = self.i_state.rotation["y"]
+                    self.accumulated_rotation = 0
+                    self.state = self.TURNING
+
+                elif self.state == self.TURNING:
+                    current_rotation = self.i_state.rotation["y"]
+                    if self.direction > 0:
+                        if self.prev_rotation > current_rotation: # complete 360 turn clockwise
+                            self.accumulated_rotation += 360 - self.prev_rotation + current_rotation
+                        else:
+                            self.accumulated_rotation += current_rotation - self.prev_rotation
+                    else:
+                        if self.prev_rotation < current_rotation: # complete 260 turn counter-clockwise
+                            self.accumulated_rotation += 360 - current_rotation + self.prev_rotation
+                        else:
+                            self.accumulated_rotation += self.prev_rotation - current_rotation
+
+                    self.prev_rotation = current_rotation
+
+                    if self.accumulated_rotation >= degrees:
+                        # We are there
+                        # print("TURNING DONE.")
+                        await self.a_agent.send_message("action", "nt")
+                        return True
+                    
+                await asyncio.sleep(0)
+
+        except asyncio.CancelledError:
+            print("***** TASK Avoid CANCELLED")
+            await self.a_agent.send_message("action", "nt")
+
+        return False  # Return True to indicate that collision avoidance is complete
+    
+
+class BN_WalkTowardsAstronaut:
+    """
+    Detects the surrounding with the sensors and,
+    if it detects any obstacle, it avoids it.
+    """
+
+    TRACKING = 0
+    TURNING = 1
+    MOVING = 2
+
+    def __init__(self, a_agent):
+        self.a_agent = a_agent
+        self.rc_sensor = a_agent.rc_sensor
+        self.i_state = a_agent.i_state
+        self.state = self.TRACKING
+        self.direction = self.i_state.get_astronaut_location()
+
+    async def run(self):
+        degrees = -self.direction if self.direction < 0 else self.direction
+        # degrees = degrees * random.choice(np.arange(0.5, 3, 0.5).tolist())
+        try:
+            if self.i_state.get_astronaut_location() is not None:
+                await self.a_agent.send_message("action", "mf")
+                return True
+            else:
+                await self.a_agent.send_message("action", "stop")
+                return False
+
+        except asyncio.CancelledError:
+            print("***** TASK Avoid CANCELLED")
+            await self.a_agent.send_message("action", "stop")
+            return False  # Return True to indicate that collision avoidance is complete

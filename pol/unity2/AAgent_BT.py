@@ -34,6 +34,8 @@ class InternalState:
 
         self.obstacle_location = None
 
+        self.astronaut_location = None
+
     def set_internal_state(self, i_state_dict):
         self.isRotatingRight = i_state_dict["isRotatingRight"]
         self.isRotatingLeft = i_state_dict["isRotatingLeft"]
@@ -66,6 +68,12 @@ class InternalState:
     
     def locate_obstacle(self, location):
         self.obstacle_location = location
+
+    def get_astronaut_location(self):
+        return self.astronaut_location
+    
+    def locate_astronaut(self, location):
+        self.astronaut_location = location
 
     def __str__(self):
         return f'Hungry: {self.hungry}\nLast time eaten: {self.last_time_agent_ate}'
