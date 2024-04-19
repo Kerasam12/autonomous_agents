@@ -110,7 +110,9 @@ class BN_DetectFlower(pt.behaviour.Behaviour):
         for index, value in enumerate(sensor_obj_info):
             if value:  # there is a hit with an object
                 if value["tag"] == "Flower":  # If it is a flower
-                    # print("Flower detected!")
+                    location = self.my_agent.rc_sensor.sensor_rays[Sensors.RayCastSensor.ANGLE][index]                    
+                    self.my_agent.i_state.update_flower_distance(value["distance"])
+                    self.my_agent.i_state.update_flower_location(location)
                     print("BN_DetectFlower completed with SUCCESS")
                     return pt.common.Status.SUCCESS
         # print("No flower...")
@@ -119,6 +121,68 @@ class BN_DetectFlower(pt.behaviour.Behaviour):
 
     def terminate(self, new_status: common.Status):
         pass
+
+
+class BN_FaceFlower(pt.behaviour.Behaviour):
+    def __init__(self, aagent):
+        self.my_goal = None
+        print("Initializing BN_FaceFlower")
+        super(BN_FaceFlower, self).__init__("BN_FaceFlower")
+        self.logger.debug("Initializing BN_FaceFlower")
+        self.my_agent = aagent
+
+    def initialise(self):
+        self.logger.debug("Create Goals_BT.ForwardDist task")
+        self.my_goal = asyncio.create_task(Goals_BT.TurnToFlower(self.my_agent).run())
+
+    def update(self):
+        if not self.my_goal.done():
+            return pt.common.Status.RUNNING
+        else:
+            if self.my_goal.result():
+                self.logger.debug("BN_FaceFlower completed with SUCCESS")
+                print("BN_FaceFlower completed with SUCCESS")
+                return pt.common.Status.SUCCESS
+            else:
+                self.logger.debug("BN_FaceFlower completed with FAILURE")
+                print("BN_FaceFlower completed with FAILURE")
+                return pt.common.Status.FAILURE
+
+    def terminate(self, new_status: common.Status):
+        # Finishing the behaviour, therefore we have to stop the associated task
+        self.logger.debug("Terminate BN_FaceFlower")
+        self.my_goal.cancel()
+
+
+class BN_MoveToFlower(pt.behaviour.Behaviour):
+    def __init__(self, aagent):
+        self.my_goal = None
+        print("Initializing BN_MoveToFlower")
+        super(BN_MoveToFlower, self).__init__("BN_MoveToFlower")
+        self.logger.debug("Initializing BN_MoveToFlower")
+        self.my_agent = aagent
+
+    def initialise(self):
+        self.logger.debug("Create Goals_BT.ForwardDist task")
+        self.my_goal = asyncio.create_task(Goals_BT.MoveToFlower(self.my_agent).run())
+
+    def update(self):
+        if not self.my_goal.done():
+            return pt.common.Status.RUNNING
+        else:
+            if self.my_goal.result():
+                self.logger.debug("BN_MoveToFlower completed with SUCCESS")
+                print("BN_MoveToFlower completed with SUCCESS")
+                return pt.common.Status.SUCCESS
+            else:
+                self.logger.debug("BN_MoveToFlower completed with FAILURE")
+                print("BN_MoveToFlower completed with FAILURE")
+                return pt.common.Status.FAILURE
+
+    def terminate(self, new_status: common.Status):
+        # Finishing the behaviour, therefore we have to stop the associated task
+        self.logger.debug("Terminate BN_MoveToFlower")
+        self.my_goal.cancel()
 
 
 # This node triggers the EatFlower goal.
@@ -668,9 +732,13 @@ class BTRoam:
 
         self.aagent = aagent
 
+        approach_flower = pt.composites.Parallel(name="ApproachFlower", policy=py_trees.common.ParallelPolicy.SuccessOnAll())
+        approach_flower.add_children([BN_FaceFlower(aagent), BN_MoveToFlower(aagent)])
+
         # Detect and eat flower behavior
         flower_detection = pt.composites.Sequence(name="DetectFlower", memory=True)
-        flower_detection.add_children([BN_CheckIfHungry(aagent), BN_DetectFlower(aagent), BN_EatFlower(aagent)])
+        flower_detection.add_children([BN_CheckIfHungry(aagent), BN_DetectFlower(aagent), 
+                                       approach_flower, BN_EatFlower(aagent)])
 
         # Roam without colliding with obstacles
         avoid_obstacle = pt.composites.Sequence(name="AvoidObstacle", memory=True)
